@@ -10,6 +10,7 @@ import 'package:flutter_application_3/BottomNavigation/Rented.dart';
 import 'package:flutter_application_3/BottomNavigation/addmember.dart';
 import 'package:flutter_application_3/BottomNavigation/myaccount.dart';
 import 'package:flutter_application_3/Widgets/customtext.dart';
+import 'package:flutter_application_3/login.dart';
 import 'package:flutter_application_3/styles/colors.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
@@ -285,11 +286,48 @@ class _AccountState extends State<Account> {
                         borderRadius: BorderRadius.circular(40))),
                     fixedSize: WidgetStatePropertyAll(Size(300.w, 45.h))),
                 onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddMember(),
-                      ));
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text(
+                          'Are You Sure?',
+                          style: TextStyle(color: Appcolor.maincolor),
+                        ),
+                        content: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            ElevatedButton(
+                                style: ButtonStyle(
+                                    backgroundColor: WidgetStatePropertyAll(
+                                        Appcolor.maincolor)),
+                                onPressed: () {
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => Login(),
+                                      ));
+                                },
+                                child: Text(
+                                  'Logout',
+                                  style: TextStyle(color: Colors.white),
+                                )),
+                            ElevatedButton(
+                                style: ButtonStyle(
+                                    backgroundColor: WidgetStatePropertyAll(
+                                        Appcolor.maincolor)),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(color: Colors.white),
+                                )),
+                          ],
+                        ),
+                      );
+                    },
+                  );
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -19,11 +19,14 @@ class _AddMemberState extends State<AddMember> {
   var emailController = TextEditingController();
   var ageController = TextEditingController();
   var flatnoController = TextEditingController();
+  late String memberIdForupdate;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<String?> getSavedFlatNo() async {
+  Future<Map<String, String?>> getSavedFlatNo() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('flatNo');
+    String? flatNo = prefs.getString('flatNo');
+    String? role = prefs.getString('role');
+    return {'flatNo': flatNo, 'role': role};
   }
 
   Future<void> addMembers() async {
@@ -79,18 +82,20 @@ class _AddMemberState extends State<AddMember> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<String?>(
+      body: FutureBuilder<Map<String, String?>>(
         future: getSavedFlatNo(),
-        builder: (context, AsyncSnapshot<String?> snapshot) {
+        builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data == null) {
             return Center(child: CircularProgressIndicator());
           }
-          String savedFlatNo = snapshot.data!;
+          String? savedFlatNo = snapshot.data!['flatNo'];
+          String? savedRole = snapshot.data!['role'];
 
           return StreamBuilder(
             stream: _firestore
                 .collection('residents')
                 .where('Flatno', isEqualTo: savedFlatNo)
+                .where('role', isEqualTo: 'Family Member')
                 .snapshots(),
             builder: (context, AsyncSnapshot<QuerySnapshot> streamSnapshot) {
               if (!streamSnapshot.hasData) {
@@ -111,29 +116,46 @@ class _AddMemberState extends State<AddMember> {
                       height: 130.h,
                       child: Padding(
                         padding: const EdgeInsets.all(10),
-                        child: Column(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Custom_Text(
-                              'Name: ${member['Name']}',
-                              size: 12,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Custom_Text(
+                                  'Name: ${member['Name']}',
+                                  size: 12,
+                                ),
+                                Custom_Text(
+                                  'Relation: ${(member.data() as Map<String, dynamic>).containsKey('Relation') ? member['Relation'] : ''}',
+                                  size: 12,
+                                ),
+                                Custom_Text(
+                                  'Age: ${member['Age']}',
+                                  size: 12,
+                                ),
+                                Custom_Text(
+                                  'Email: ${member['Email']}',
+                                  size: 12,
+                                ),
+                                Custom_Text(
+                                  'Flat no: ${member['Flatno'] ?? ''}',
+                                  size: 12,
+                                ),
+                              ],
                             ),
-                            Custom_Text(
-                              'Relation: ${(member.data() as Map<String, dynamic>).containsKey('Relation') ? member['Relation'] : ''}',
-                              size: 12,
-                            ),
-                            Custom_Text(
-                              'Age: ${member['Age']}',
-                              size: 12,
-                            ),
-                            Custom_Text(
-                              'Email: ${member['Email']}',
-                              size: 12,
-                            ),
-                            Custom_Text(
-                              'Flat no: ${member['Flatno'] ?? ''}',
-                              size: 12,
-                            ),
+                            IconButton(
+                                onPressed: () {
+                                  FirebaseFirestore.instance
+                                      .collection('residents')
+                                      .doc(member.id)
+                                      .delete();
+                                },
+                                icon: Icon(
+                                  Icons.delete_rounded,
+                                  color: Appcolor.maincolor,
+                                ))
                           ],
                         ),
                       ),

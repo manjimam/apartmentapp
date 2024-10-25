@@ -24,7 +24,7 @@ class _RentedState extends State<Rented> {
   final TextEditingController phoneNoController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-
+  late String rented;
   String? selectedSex;
   String? selectedStatus;
   final List<String> sexOptions = ['Male', 'Female', 'Other'];
@@ -39,61 +39,63 @@ class _RentedState extends State<Rented> {
   }
 
   Future<void> renteduser() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        UserCredential userCredential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(
-                email: emailController.text, password: passwordController.text);
+    try {
+      String defaultPassword =
+          '123${nameController.text}'; // Use name in password
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+              email: emailController.text, password: defaultPassword);
 
-        String useruid = userCredential.user!.uid;
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String? savedFlatNo =
-            prefs.getString('flatNo') ?? flatNoController.text;
+      String useruid = userCredential.user!.uid;
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? savedFlatNo = prefs.getString('flatNo');
+      String? savedRole = prefs.getString('role');
 
-        Map<String, dynamic> userData = {
-          'Name': nameController.text,
-          'Email': emailController.text,
-          'Address': addressController.text,
-          'DOB': dobController.text,
-          'Age': ageController.text,
-          'Phone': phoneNoController.text,
-          'Aadhar': aadharNoController.text,
-          'Flatno': savedFlatNo,
-          'Sex': selectedSex,
-          'Status': selectedStatus,
-          'role': 'Rented',
-          'useruid': useruid,
-        };
-
-        print("Saving user data: $userData");
-
-        await _firestore.collection('residents').doc(useruid).set(userData);
+      if (savedFlatNo == null && savedRole == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('User Added Successfully')),
+          SnackBar(content: Text(' not found in shared preferences.')),
         );
-
-        clearFormFields();
-      } catch (e) {
-        print('Error adding user: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding user: ${e.toString()}')),
-        );
+        return;
       }
-    }
-  }
 
-  void clearFormFields() {
-    nameController.clear();
-    addressController.clear();
-    dobController.clear();
-    ageController.clear();
-    flatNoController.clear();
-    aadharNoController.clear();
-    phoneNoController.clear();
-    emailController.clear();
-    passwordController.clear();
-    selectedSex = null;
-    selectedStatus = null;
+      // Save the family member's details to Firestore
+      await FirebaseFirestore.instance
+          .collection('residents')
+          .doc(useruid)
+          .set({
+        'Name': nameController.text,
+        'Email': emailController.text,
+        'Adress': addressController.text,
+        'DOB': dobController.text,
+        'Age': ageController.text,
+        'Phone': phoneNoController.text,
+        'Aadhar': aadharNoController.text,
+        'Flatno': savedFlatNo,
+        'Sex': selectedSex,
+        'Status': selectedStatus,
+        'role': 'Rented',
+        'useruid': useruid,
+      });
+
+      nameController.clear();
+      addressController.clear();
+      dobController.clear();
+      ageController.clear();
+      flatNoController.clear();
+      aadharNoController.clear();
+      phoneNoController.clear();
+      emailController.clear();
+      passwordController.clear();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('User Added Successfully')),
+      );
+    } catch (e) {
+      print('Error adding member: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add member: $e')),
+      );
+    }
   }
 
   @override
@@ -105,51 +107,81 @@ class _RentedState extends State<Rented> {
           if (!snapshot.hasData || snapshot.data == null) {
             return Center(child: CircularProgressIndicator());
           }
-
           String? savedFlatNo = snapshot.data!['flatNo'];
           String? savedRole = snapshot.data!['role'];
 
-          return StreamBuilder<QuerySnapshot>(
+          return StreamBuilder(
             stream: _firestore
                 .collection('residents')
                 .where('Flatno', isEqualTo: savedFlatNo)
                 .where('role', isEqualTo: 'Rented')
                 .snapshots(),
-            builder: (context, streamSnapshot) {
+            builder: (context, AsyncSnapshot<QuerySnapshot> streamSnapshot) {
               if (!streamSnapshot.hasData) {
-                return Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator());
               }
               if (streamSnapshot.data!.docs.isEmpty) {
-                return Center(child: Text('No rented users found.'));
+                return const Center(child: Text('No rented users found.'));
               }
+
               return ListView.builder(
                 itemCount: streamSnapshot.data!.docs.length,
                 itemBuilder: (context, index) {
                   var rented = streamSnapshot.data!.docs[index];
-                  return Container(
-                    decoration: BoxDecoration(
-                        color: Appcolor.primarycolor,
-                        borderRadius: BorderRadius.circular(20)),
-                    height: 130.h,
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Custom_Text('Name: ${rented['Name']}', size: 12),
-                          Custom_Text('Email: ${rented['Email']}', size: 12),
-                          Custom_Text('Address: ${rented['Address'] ?? 'N/A'}',
-                              size: 12),
-                          Custom_Text('Phone no: ${rented['Phone'] ?? 'N/A'}',
-                              size: 12),
-                          Custom_Text('Gender: ${rented['Sex'] ?? 'N/A'}',
-                              size: 12),
-                          Custom_Text('Age: ${rented['Age']}', size: 12),
-                          Custom_Text('Aadhar No: ${rented['Aadhar'] ?? 'N/A'}',
-                              size: 12),
-                          Custom_Text('Status: ${rented['Status'] ?? 'N/A'}',
-                              size: 12),
-                        ],
+
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                          color: Appcolor.primarycolor,
+                          borderRadius: BorderRadius.circular(20)),
+                      height: 190.h,
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Custom_Text('Name: ${rented['Name']}',
+                                    size: 12),
+                                Custom_Text('Email: ${rented['Email']}',
+                                    size: 12),
+                                Custom_Text(
+                                    'Adress: ${(rented.data() as Map<String, dynamic>).containsKey('Adress') ? rented['Adress'] : ''}',
+                                    size: 12),
+                                Custom_Text(
+                                    'Phone no: ${(rented.data() as Map<String, dynamic>).containsKey('Phone') ? rented['Phone'] : 'N/A'}',
+                                    size: 12),
+                                Custom_Text(
+                                    'Gender: ${(rented.data() as Map<String, dynamic>).containsKey('Phone') ? rented['Sex'] : 'N/A'}',
+                                    size: 12),
+                                Custom_Text(
+                                    'Age: ${(rented.data() as Map<String, dynamic>).containsKey('Phone') ? rented['Age'] : ''}',
+                                    size: 12),
+                                Custom_Text(
+                                    'Aadhar No: ${(rented.data() as Map<String, dynamic>).containsKey('Phone') ? rented['Aadhar'] : 'N/A'}',
+                                    size: 12),
+                                Custom_Text(
+                                    'Status: ${(rented.data() as Map<String, dynamic>).containsKey('Phone') ? rented['Status'] : 'N/A'}',
+                                    size: 12),
+                              ],
+                            ),
+                            IconButton(
+                                onPressed: () {
+                                  FirebaseFirestore.instance
+                                      .collection('residents')
+                                      .doc(rented.id)
+                                      .delete();
+                                },
+                                icon: Icon(
+                                  Icons.delete_rounded,
+                                  color: Appcolor.maincolor,
+                                ))
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -166,29 +198,29 @@ class _RentedState extends State<Rented> {
             context: context,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: Custom_Text('Add a Rented user'),
+                title: const Custom_Text('Add a Rented user'),
                 content: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextField(
                         controller: nameController,
-                        decoration: InputDecoration(hintText: 'Name'),
+                        decoration: const InputDecoration(hintText: 'Name'),
                       ),
                       TextField(
                         controller: addressController,
-                        decoration: InputDecoration(hintText: 'Adress'),
+                        decoration: const InputDecoration(hintText: 'Adress'),
                       ),
                       TextField(
                         controller: emailController,
-                        decoration: InputDecoration(hintText: 'Email'),
+                        decoration: const InputDecoration(hintText: 'Email'),
                       ),
                       TextField(
                         controller: ageController,
-                        decoration: InputDecoration(hintText: 'Age'),
+                        decoration: const InputDecoration(hintText: 'Age'),
                       ),
                       DropdownButtonFormField<String>(
-                        decoration: InputDecoration(hintText: 'Sex'),
+                        decoration: const InputDecoration(hintText: 'Sex'),
                         value: selectedSex,
                         items: sexOptions
                             .map((sex) => DropdownMenuItem<String>(
