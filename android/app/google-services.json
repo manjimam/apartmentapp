@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "895373216385",
+    "project_id": "appartmentapp-d387f",
+    "storage_bucket": "appartmentapp-d387f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:895373216385:android:5395116e0d98b68bb79b80",
+        "android_client_info": {
+          "package_name": "com.einlogica.apartmentapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0mWnICgLoGDv1qvmvOFkynGo2o_hUdfo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:895373216385:android:a6ec4eee0c89b36db79b80",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_3"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0mWnICgLoGDv1qvmvOFkynGo2o_hUdfo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
